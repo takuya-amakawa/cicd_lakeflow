@@ -1,0 +1,49 @@
+# =============================================================================
+# CD — main マージ後のデプロイパイプライン
+#   1. staging（Dev ワークスペース）へ自動デプロイ + スモークテスト
+#   2. production 環境の承認ゲート（required reviewers）で人が承認
+#   3. prod（Prod ワークスペース）へデプロイ
+# =============================================================================
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency: cd-main  # 同時デプロイによる競合を防ぐ
+
+jobs:
+  deploy-staging:
+    name: staging へデプロイ（SP 権限）
+    # ワークスペースは IP ACL で保護されているため self-hosted runner（社内NW）を使用
+    runs-on: self-hosted
+    environment: dev
+    env:
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - name: Deploy bundle (staging)
+        run: databricks bundle deploy -t staging
+      - name: スモークテスト（ジョブを1回実行して成功を確認）
+        run: databricks bundle run demo_etl_job -t staging
+
+  deploy-prod:
+    name: prod へデプロイ（承認後 / SP 権限）
+    needs: deploy-staging
+    # ワークスペースは IP ACL で保護されているため self-hosted runner（社内NW）を使用
+    runs-on: self-hosted
+    # production 環境の required reviewers 設定により、ここで承認待ちになる
+    environment: production
+    env:
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - name: Validate bundle (prod)
+        run: databricks bundle validate -t prod
+      - name: Deploy bundle (prod)
+        run: databricks bundle deploy -t prod

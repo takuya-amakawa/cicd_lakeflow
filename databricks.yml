@@ -1,0 +1,65 @@
+# =============================================================================
+# Databricks Asset Bundle 定義
+#
+# 「何を・どうデプロイするか」はすべてこのファイル群（databricks.yml + resources/）
+# が持つ。CI ツール（GitHub Actions / Azure Pipelines）は
+# `databricks bundle validate / deploy / run` を呼ぶだけ。
+# → CI ツールを乗り換えても、このファイルは変更不要。
+# =============================================================================
+bundle:
+  name: cicd_lakeflow
+
+include:
+  - resources/*.yml
+
+variables:
+  notify_email:
+    description: ジョブ失敗時の通知先
+    default: takuya.amakawa@databricks.com
+
+targets:
+  # ---------------------------------------------------------------------------
+  # dev: 開発者個人のサンドボックス（開発者がローカルから deploy する）
+  #   mode: development により
+  #   - リソース名に [dev <ユーザー名>] プレフィックスが付き、開発者ごとに分離される
+  #   - スケジュール/トリガーは自動で一時停止される
+  # ---------------------------------------------------------------------------
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-7405614596113237.17.azuredatabricks.net
+
+  # ---------------------------------------------------------------------------
+  # staging: main マージ後の統合確認環境（Dev ワークスペースに同居）
+  #   GitHub Actions がデプロイ用 SP（sp-dab-cicd-deploy）の権限で配置する。
+  #   デモのコスト節約のため、日次トリガーは PAUSED にしている。
+  # ---------------------------------------------------------------------------
+  staging:
+    workspace:
+      host: https://adb-7405614596113237.17.azuredatabricks.net
+      # SP のホーム配下に固定（/Workspace/Shared は全ユーザー書込可のため避ける）
+      root_path: /Workspace/Users/d33bb376-3084-48aa-966e-b2da825d3deb/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      service_principal_name: d33bb376-3084-48aa-966e-b2da825d3deb
+    presets:
+      trigger_pause_status: PAUSED
+
+  # ---------------------------------------------------------------------------
+  # prod: 本番（Prod ワークスペース）
+  #   mode: production + SP 実行。個人ユーザーには CAN_MANAGE を明示付与して
+  #   運用者が UI から確認できるようにする。
+  # ---------------------------------------------------------------------------
+  prod:
+    mode: production
+    workspace:
+      host: https://adb-7405609436530410.10.azuredatabricks.net
+      # SP のホーム配下に固定（/Workspace/Shared は全ユーザー書込可のため避ける）
+      root_path: /Workspace/Users/b6c81dd4-74d1-407c-a55a-34baa3dff22b/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      service_principal_name: b6c81dd4-74d1-407c-a55a-34baa3dff22b
+    permissions:
+      - user_name: takuya.amakawa@databricks.com
+        level: CAN_MANAGE
+      - service_principal_name: b6c81dd4-74d1-407c-a55a-34baa3dff22b
+        level: CAN_MANAGE

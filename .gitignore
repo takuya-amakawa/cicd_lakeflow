@@ -1,0 +1,11 @@
+# DAB のローカル状態（デプロイ済みリソースのキャッシュ等）
+.databricks/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# 資格情報は絶対にコミットしない
+.env

@@ -1,0 +1,18 @@
+# ジョブ定義もコードとして Git 管理する（UI で作った設定が散逸しない）。
+# クラスタ指定を省略しているため serverless で実行される。
+resources:
+  jobs:
+    demo_etl_job:
+      name: demo_etl_job
+      description: DAB CI/CD デモ用ジョブ。取引データを金額区分ごとに集計する。
+      trigger:
+        periodic:
+          interval: 1
+          unit: DAYS
+      email_notifications:
+        on_failure:
+          - ${var.notify_email}
+      tasks:
+        - task_key: run_etl
+          notebook_task:
+            notebook_path: ../src/demo_etl.py

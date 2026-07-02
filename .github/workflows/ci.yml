@@ -1,0 +1,39 @@
+# =============================================================================
+# CI — Pull Request 検証
+# CI ツールの責務は「いつ・どこへ・誰の権限で」だけ。
+# デプロイ内容の定義は databricks.yml（DAB）側にある。
+# =============================================================================
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-test:
+    name: ユニットテスト (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pytest
+        run: pip install pytest
+      - name: Run unit tests
+        run: pytest tests -v
+
+  bundle-validate:
+    name: バンドル検証 (databricks bundle validate)
+    # ワークスペースは IP ACL で保護されているため、Databricks に到達できる
+    # 社内ネットワーク上の self-hosted runner を使う（hosted runner の IP は遮断される）
+    runs-on: self-hosted
+    environment: dev  # dev 環境スコープの Secrets（デプロイ用 SP の資格情報）を使う
+    env:
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - name: Validate bundle (staging target)
+        run: databricks bundle validate -t staging
