@@ -18,6 +18,9 @@ from transforms import categorize_amount
         (9_999, "medium"),
         (10_000, "large"),
         (89_000, "large"),
+        (99_999, "large"),
+        (100_000, "xlarge"),
+        (250_000, "xlarge"),
     ],
 )
 def test_categorize_amount(amount, expected):
