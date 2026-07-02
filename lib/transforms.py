@@ -2,11 +2,12 @@
 
 
 def categorize_amount(amount: int) -> str:
-    """取引金額を3区分に分類する。
+    """取引金額を4区分に分類する。
 
     - 1,000 未満: small
     - 1,000 以上 10,000 未満: medium
-    - 10,000 以上: large
+    - 10,000 以上 100,000 未満: large
+    - 100,000 以上: xlarge
     """
     if amount < 0:
         raise ValueError(f"amount must be non-negative, got {amount}")
@@ -14,4 +15,6 @@ def categorize_amount(amount: int) -> str:
         return "small"
     if amount < 10_000:
         return "medium"
-    return "large"
+    if amount < 100_000:
+        return "large"
+    return "xlarge"
