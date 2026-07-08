@@ -2,7 +2,7 @@
 
 
 def categorize_amount(amount: int) -> str:
-    """取引金額を4区分に分類する。
+    """取引金額を4区分に分類する（境界は未満で判定）。
 
     - 1,000 未満: small
     - 1,000 以上 10,000 未満: medium
