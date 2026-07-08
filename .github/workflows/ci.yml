@@ -34,6 +34,6 @@ jobs:
       DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v4
-      - uses: databricks/setup-cli@main
+      - uses: databricks/setup-cli@v1.6.0
       - name: Validate bundle (staging target)
         run: databricks bundle validate -t staging
